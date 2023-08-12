@@ -19,8 +19,14 @@ set (SOURCES
   SSLConnection/Server.cpp
   SSLConnection/Acceptor.cpp
   SSLConnection/Service.cpp
-  FileUtil.cpp
-  DBUtil.cpp
+  TCPConnection/Server.cpp
+  TCPConnection/Acceptor.cpp
+  TCPConnection/Service.cpp
+  UDPConnection/Server.cpp
+  UDPConnection/Acceptor.cpp
+  UDPConnection/Service.cpp
+  Util/FileUtil.cpp
+  Util/DBUtil.cpp
 )
 
 set (INCLUDES
@@ -28,8 +34,14 @@ set (INCLUDES
   SSLConnection/Server.hpp
   SSLConnection/Acceptor.hpp
   SSLConnection/Service.hpp
-  FileUtil.hpp
-  DBUtil.hpp
+  TCPConnection/Server.hpp
+  TCPConnection/Acceptor.hpp
+  TCPConnection/Service.hpp
+  UDPConnection/Server.hpp
+  UDPConnection/Acceptor.hpp
+  UDPConnection/Service.hpp
+  Util/FileUtil.hpp
+  Util/DBUtil.hpp
 )
 
 set (ARTIFACTS
@@ -40,7 +52,7 @@ key.pem)
 
 add_executable(RemoteLogger ${SOURCES} ${INCLUDES})
 
-configure_file(${CMAKE_SOURCE_DIR}/${ARTIFACTS} COPYONLY)
+#configure_file(${CMAKE_SOURCE_DIR}/${ARTIFACTS} COPYONLY)
 set_target_properties(RemoteLogger PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib

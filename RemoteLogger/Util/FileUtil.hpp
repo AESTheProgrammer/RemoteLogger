@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef REMOTELOGGER_FILEUTIL_HPP
-#define REMOTELOGGER_FILEUTIL_HPP
+#ifndef REMOTELOGGER_UTIL_FILEUTIL_HPP
+#define REMOTELOGGER_UTIL_FILEUTIL_HPP
 
 #include <fstream>
 #include <iostream>

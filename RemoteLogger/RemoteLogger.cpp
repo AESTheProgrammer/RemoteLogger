@@ -18,89 +18,19 @@
 #include <boost/asio/ssl.hpp>
 
 #include "RemoteLogger.hpp"
-#include "SSLConnection/Acceptor.hpp"
-#include "SSLConnection/Service.hpp"
 #include "SSLConnection/Server.hpp"
+#include "TCPConnection/Server.hpp"
+#include "TCPConnection/Acceptor.hpp"
+#include "TCPConnection/Service.hpp"
+#include "UDPConnection/Server.hpp"
 #include "blockingconcurrentqueue.h"
-#include "FileUtil.hpp"
-#include "DBUtil.hpp"
+#include "Util/FileUtil.hpp"
+#include "Util/DBUtil.hpp"
 
 #define DEBUG 0
 
 using cQueue = moodycamel::BlockingConcurrentQueue<std::string>;
 using namespace boost;
-using namespace SSLConnection;
-
-void writeToTCPSock(asio::ip::tcp::socket &sock, cQueue &q)
-{
-	std::string buf;
-	int count = 1;
-	while ((q.wait_dequeue_timed(buf, std::chrono::milliseconds(1000)))) {
-		asio::write(sock, asio::buffer(buf + "\n"));
-		#if DEBUG
-		cout << (count++);
-		cout << buf + "\n";
-		#endif 
-	}
-}
-
-
-int sendSavedLogsTCP(asio::ip::tcp::socket &sock, asio::ip::udp::endpoint *ep = nullptr)
-{
-	const char logFileName[] = "C:\\Users\\armin\\Downloads\\MyLog.txt";
-	std::ifstream logFile{logFileName};
-	cQueue q;
-	if (logFile.is_open())
-	{
-		std::string tmp;
-		std::cout << "creating producer \n";
-		//std::thread producer(readFileToQueue, std::ref(logFileName), std::ref(q));
-		DBUtil* db = DBUtil::getInstance();
-		std::thread producer(&DBUtil::getLogs, db, std::ref(q));
-		std::cout << "creating TCP consumer \n";
-		std::thread consumer(writeToTCPSock, std::ref(sock), std::ref(q));
-		std::cout << "waiting for TCP consumer \n";
-		consumer.join();
-		std::cout << "waiting for producer \n";
-		producer.join();
-	}
-	else
-	{
-		std::cout << "could not Open the Log file.\n";
-	}
-	return 0;
-}
-
-int TCPServer()
-{
-
-	const int BACKLOG_SIZE = 30;
-	unsigned short port_num = 3333;
-	asio::ip::tcp::endpoint ep(asio::ip::address_v4::any(),
-							   port_num);
-	asio::io_service ios;
-	try
-	{
-		asio::ip::tcp::acceptor acceptor(ios, ep.protocol());
-		acceptor.bind(ep);
-		std::cout << "TCP server started\n";
-		while (true)
-		{
-			acceptor.listen(BACKLOG_SIZE);
-			asio::ip::tcp::socket sock(ios);
-			acceptor.accept(sock);
-			sendSavedLogsTCP(sock);
-			std::cout << "Finished sending logs\n";
-		}
-	}
-	catch (system::system_error &e)
-	{
-		std::cout << "Error occured! Error code = " << e.code()
-				  << ". Message: " << e.what();
-		return e.code().value();
-	}
-	return 0;
-}
 
 void writeToUDPSock(asio::ip::udp::socket &sock,
 					asio::ip::udp::endpoint *&ep,
@@ -167,19 +97,19 @@ int UDPServer()
 	return 0;
 }
 
-void SSLServer() {
-	unsigned short port_num = 3335;
-	try {
-		Server srv;
-		srv.start(port_num);
-		srv.stop();
-	}
-	catch (system::system_error& e) {
-		std::cout << "Error occured! Error code = "
-			<< e.code() << ". Message: "
-			<< e.what();
-	}
-}
+//void SSLServer() {
+//	unsigned short port_num = 3335;
+//	try {
+//		Server srv;
+//		srv.start(port_num);
+//		srv.stop();
+//	}
+//	catch (system::system_error& e) {
+//		std::cout << "Error occured! Error code = "
+//			<< e.code() << ". Message: "
+//			<< e.what();
+//	}
+//}
 
 void fillDB() {
 	DBUtil* db = DBUtil::getInstance();
@@ -194,14 +124,26 @@ void fillDB() {
 	db->insertLogs(logs);
 }
 
+
 int main()
 {
-	std::thread tcpHandler(TCPServer);
-	std::thread udpHandler(UDPServer);
-	// std::thread sslHandler(SSLServer);
-	tcpHandler.join();
-	udpHandler.join();
-	// sslHandler.join();
+	try {
+
+		UDPConnection::Server udpServer;
+		TCPConnection::Server tcpServer;
+		unsigned short tcpPort = 3333;
+		unsigned short udpPort = 3334;
+		udpServer.start(udpPort);
+		tcpServer.start(tcpPort);
+		std::this_thread::sleep_for(std::chrono::seconds(60));
+		udpServer.stop();
+		tcpServer.stop();
+	}
+	catch (system::system_error& e) {
+		cout << "Error occured! Error code = "
+			<< e.code() << ". Message: "
+			<< e.what();
+	}
 	return 0;
 }
 
